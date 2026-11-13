@@ -129,18 +129,18 @@ The service is deployed on [Render](https://render.com) (free tier), built direc
 - Instance type: Free
 - Environment variable: `PORT=9696`
 
-URL: https://water-potability.onrender.com
+URL: https://water-potability-jk6q.onrender.com
 
 Health check:
 
 ```bash
-curl https://water-potability.onrender.com/health
+curl https://water-potability-jk6q.onrender.com/health
 ```
 
 Prediction (Windows PowerShell):
 
 ```powershell
-Invoke-RestMethod -Uri https://water-potability.onrender.com/predict -Method Post -ContentType "application/json" -Body '{"ph": 7.08, "hardness": 204.89, "solids": 20791.32, "chloramines": 7.30, "sulfate": 368.52, "conductivity": 564.31, "organic_carbon": 10.38, "trihalomethanes": 86.99, "turbidity": 2.96}'
+Invoke-RestMethod -Uri https://water-potability-jk6q.onrender.com/predict -Method Post -ContentType "application/json" -Body '{"ph": 7.08, "hardness": 204.89, "solids": 20791.32, "chloramines": 7.30, "sulfate": 368.52, "conductivity": 564.31, "organic_carbon": 10.38, "trihalomethanes": 86.99, "turbidity": 2.96}'
 ```
 
 The free tier sleeps after 15 minutes of inactivity, so the first request can take a while.
