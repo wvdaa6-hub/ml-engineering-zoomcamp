@@ -29,15 +29,18 @@ The data is split into train (60%), validation (20%) and test (20%), stratified 
 
 ## Modeling
 
-<!-- TODO: fill in from notebook -->
+Four models were tuned with 5-fold cross-validation on the train + validation data:
 
-| Model | CV ROC AUC |
-|---|---|
-| Logistic regression (baseline) | _TODO_ |
-| Random forest | _TODO_ |
-| XGBoost | _TODO_ |
+| Model | Best settings | CV ROC AUC |
+|---|---|---|
+| Random forest | max_depth=15, min_samples_leaf=1 | 0.652 ± 0.023 |
+| XGBoost | eta=0.05, max_depth=6, min_child_weight=10 | 0.648 ± 0.015 |
+| Decision tree | max_depth=8, min_samples_leaf=50 | 0.607 ± 0.046 |
+| Logistic regression (baseline) | C=1 | 0.550 ± 0.025 |
 
-**Final model:** _TODO_ (test ROC AUC: _TODO_)
+Each more flexible model improves on the previous one. Without `ph_dist`, logistic regression drops to 0.497, so the engineered feature carries all of its predictive power.
+
+**Final model:** random forest, trained on train + validation. **Test ROC AUC: 0.702.**
 
 ## Project structure
 
@@ -47,26 +50,37 @@ water_potability.ipynb      data preparation, EDA, model selection & tuning
 train.py                    trains the final model → model.bin
 predict.py                  loads the model and runs inference
 serve.py                    Flask service: POST /predict, GET /health
-requirements.txt            dependencies
+model.bin                   trained model
+requirements.txt            dependencies (Python 3.13)
 Dockerfile                  container for the service
 ```
 
 ## How to run
 
+### Locally
+
 ```bash
 pip install -r requirements.txt
-python train.py
+python train.py        # creates model.bin
 python serve.py        # runs on http://localhost:9696
 ```
 
-Or with Docker:
+### With Docker
 
 ```bash
 docker build -t water-potability .
 docker run -it --rm -p 9696:9696 water-potability
 ```
 
-Example request:
+## API usage
+
+Health check:
+
+```bash
+curl http://localhost:9696/health
+```
+
+Prediction (bash / Git Bash):
 
 ```bash
 curl -X POST http://localhost:9696/predict \
@@ -74,17 +88,23 @@ curl -X POST http://localhost:9696/predict \
   -d '{"ph": 7.08, "hardness": 204.89, "solids": 20791.32, "chloramines": 7.30, "sulfate": 368.52, "conductivity": 564.31, "organic_carbon": 10.38, "trihalomethanes": 86.99, "turbidity": 2.96}'
 ```
 
+Prediction (Windows PowerShell):
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:9696/predict -Method Post -ContentType "application/json" -Body '{"ph": 7.08, "hardness": 204.89, "solids": 20791.32, "chloramines": 7.30, "sulfate": 368.52, "conductivity": 564.31, "organic_carbon": 10.38, "trihalomethanes": 86.99, "turbidity": 2.96}'
+```
+
 Response:
 
 ```json
-{"potability_probability": 0.42, "potable": false}
+{"potability_probability": 0.391, "potable": false}
 ```
 
-## Deployment
+Missing measurements may be left out of the request; they are filled in with the training median.
 
-<!-- TODO -->
-URL or screenshot: _TODO_
+## Limitations and next steps
 
-## Limitations
-
-The features correlate only weakly with the target, so model performance is moderate. There is no information on sample location or time.
+- The features correlate only weakly with the target, so model performance is moderate.
+- The dataset has no information on sample location or time.
+- The model is a screening tool only; decisions on water safety require certified lab testing.
+- Next steps: tune the decision threshold to favour safety (fewer unsafe samples labelled as potable) and deploy the service to the cloud.
