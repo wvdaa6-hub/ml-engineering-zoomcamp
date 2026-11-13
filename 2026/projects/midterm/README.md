@@ -53,14 +53,30 @@ serve.py                    Flask service: POST /predict, GET /health
 model.bin                   trained model
 requirements.txt            dependencies (Python 3.13)
 Dockerfile                  container for the service
+images/                     screenshots of the service in action
 ```
 
 ## How to run
 
 ### Locally
 
+Create and activate a virtual environment (Python 3.13), then install the dependencies:
+
 ```bash
+python -m venv .venv
+
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+
 pip install -r requirements.txt
+```
+
+Train the model and start the service:
+
+```bash
 python train.py        # creates model.bin
 python serve.py        # runs on http://localhost:9696
 ```
@@ -100,11 +116,42 @@ Response:
 {"potability_probability": 0.391, "potable": false}
 ```
 
+![Prediction with the Docker container](images/prediction.png)
+
 Missing measurements may be left out of the request; they are filled in with the training median.
+
+## Cloud deployment
+
+The service is deployed on [Render](https://render.com) (free tier), built directly from this repository with the Dockerfile:
+
+- Root directory: `2026/projects/midterm`
+- Runtime: Docker
+- Instance type: Free
+- Environment variable: `PORT=9696`
+
+URL: https://water-potability.onrender.com
+
+Health check:
+
+```bash
+curl https://water-potability.onrender.com/health
+```
+
+Prediction (Windows PowerShell):
+
+```powershell
+Invoke-RestMethod -Uri https://water-potability.onrender.com/predict -Method Post -ContentType "application/json" -Body '{"ph": 7.08, "hardness": 204.89, "solids": 20791.32, "chloramines": 7.30, "sulfate": 368.52, "conductivity": 564.31, "organic_carbon": 10.38, "trihalomethanes": 86.99, "turbidity": 2.96}'
+```
+
+The free tier sleeps after 15 minutes of inactivity, so the first request can take a while.
+
+![Prediction from the cloud service](images/cloud_prediction.png)
+
+To stop the service and avoid any costs, delete it in the Render dashboard (Settings → Delete Web Service).
 
 ## Limitations and next steps
 
 - The features correlate only weakly with the target, so model performance is moderate.
 - The dataset has no information on sample location or time.
 - The model is a screening tool only; decisions on water safety require certified lab testing.
-- Next steps: tune the decision threshold to favour safety (fewer unsafe samples labelled as potable) and deploy the service to the cloud.
+- Next steps: tune the decision threshold to favour safety (fewer unsafe samples labelled as potable).
